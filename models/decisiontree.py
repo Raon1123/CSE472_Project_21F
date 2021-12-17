@@ -135,6 +135,7 @@ class DecisionTree():
 
     def function_select(self, X, y):
         trainN, featureN = X.shape
+        maximum = np.sum(X[0])
 
         max_info = 0.0
         best_feature = None
@@ -145,7 +146,7 @@ class DecisionTree():
         while best_feature == None:
             for feature in range(featureN):
                 w = np.random.choice([-1,1])
-                thres = w * np.random.randint(0, 60)
+                thres = w * np.random.randint(1, maximum)
                 func = split_linear_func(feature, w, thres)
                 info = info_gain(X, y, func)
                 if info > max_info and (info is not np.inf):
@@ -181,8 +182,8 @@ class DecisionTree():
 
 
 class RandForest():
-    def __init__(self, forest=100, bag_size=1000):
-        self.forest = [DecisionTree() for i in range(forest)]
+    def __init__(self, forest=100, bag_size=1000, depth=100):
+        self.forest = [DecisionTree(depth=depth) for i in range(forest)]
         self.bag_size = bag_size
 
     def fit(self, X, y):
@@ -199,7 +200,7 @@ class RandForest():
     def predict(self, X):
         testN, _ = X.shape
 
-        prediction = np.zeros(testN, self.featureN)
+        prediction = np.zeros((testN, self.featureN))
 
         for idx, tree in enumerate(tqdm.tqdm(self.forest)):
             prediction[:,idx] = tree.predict(X)
