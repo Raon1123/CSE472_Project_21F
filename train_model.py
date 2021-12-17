@@ -6,12 +6,19 @@ from utils.load_data import get_data
 from models.svm import SVM
 from sklearn import svm
 
+def get_features(dataset):
+    if dataset == 'cifar10':
+        features = list(range(10))
+    elif dataset == 'MNIST':
+        features = list(range(10))
+    
+    return features
+
 """
 train models
 """
 def train_step(args, trainFeature, trainy):
     dataset = args['dataset']
-    dataroot = args['dataroot']
     validation = args['validation']
     batch_sz = args['batch']
 
@@ -21,12 +28,11 @@ def train_step(args, trainFeature, trainy):
     sigma = args['sigma']
     kernel = args['kernel']
 
-    if dataset == 'cifar10':
-        features = list(range(10))
+    features = get_features(dataset)
     
     # Prepare models
     if model_type == 'custom_SVM':
-        models = [SVM(kernel=kernel, C=C, sigma=sigma) for i in features]
+        models = [SVM(kernel=kernel, C=C, sigma=sigma, cuda=args['cuda']) for i in features]
     else:
         models = [svm.SVC(kernel='rbf', C=C) for i in features]
 
@@ -112,12 +118,9 @@ def train_step(args, trainFeature, trainy):
 
 def test_step(args, testFeature, testy, models):
     dataset = args['dataset']
-    dataroot = args['dataroot']
-    dict_size = args['dict_size']
     batch_sz = 2000
 
-    if dataset == 'cifar10':
-        features = list(range(10))
+    features = get_features(dataset)  
 
     testN = testFeature.shape[0]
 

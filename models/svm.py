@@ -1,6 +1,4 @@
 import numpy as np
-import cupy as cp
-#from cvxopt import solvers, matrix
 import osqp
 from scipy import sparse
 
@@ -22,6 +20,7 @@ def gaussian_kernel(sigma, cuda=False):
     def func(X1, X2):
         # Pairwise subtraction and calculate square distance
         if cuda:
+            import cupy as cp
             diff = cp.array(X2)[cp.newaxis,:,:] - cp.array(X1)[:, cp.newaxis, :]
             sq_dist = cp.sum(cp.square(diff), axis=-1)
             ret = cp.asnumpy(cp.exp(sq_dist / (-2.0 * cp.square(sigma))))
@@ -43,9 +42,9 @@ class SVM():
     - C: softmargin hyperparameter
     - sigma: parameter of gaussian kernel
     """
-    def __init__(self, kernel="linear", C=0.05, sigma=None):
+    def __init__(self, kernel="linear", C=0.05, sigma=None, cuda=False):
         if kernel == "gaussian":
-            self.kernel = gaussian_kernel(sigma, cuda=False)
+            self.kernel = gaussian_kernel(sigma, cuda=cuda)
         else:
             self.kernel = linear_kernel(sigma)
         self.C = C
