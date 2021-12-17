@@ -108,9 +108,6 @@ class NODE():
 
 
 class DecisionTree():
-    """
-    Decision tree based ID3
-    """
     def __init__(self, depth=20):
         self.depth = depth
         self.root = None
