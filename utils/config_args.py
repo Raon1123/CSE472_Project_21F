@@ -23,7 +23,7 @@ def parse_args (parser):
     parser.add_argument('--batch', type=int, default=1000)
 
     # ETC
-    parser.add_argument('--load_cluster', type=bool, default=False)
+    parser.add_argument('--loadcluster', type=bool, default=False)
     parser.add_argument('--cuda', type=bool, default=False) 
 
     args = parser.parse_args()

@@ -1,4 +1,5 @@
 import numpy as np
+import tqdm
 
 """
 Generate split function for decision tree
@@ -164,7 +165,6 @@ class DecisionTree():
                 thres = w * np.random.randint(0, 60)
                 func = split_linear_func(feature, w, thres)
                 info = info_gain(X, y, func, label)
-                #print(w, thres, info, max_info, best_feature, best_w)
                 if info > max_info and (info is not np.inf):
                     max_info = info
                     best_feature = feature
@@ -198,12 +198,30 @@ class DecisionTree():
 
 
 class RandForest():
-    def __init__(self, forest):
+    def __init__(self, forest=100, bag_size=1000):
         self.forest = [DecisionTree() for i in range(forest)]
+        self.bag_size = bag_size
 
     def fit(self, X, y):
-        # Bootstrap
-        pass
+        trainN, featureN = X.shape
+        self.featureN = np.unique(y).shape[0]
+
+        for tree in tqdm.tqdm(self.forest):
+            bag = np.random.randint(0, trainN, size=self.bag_size)
+            selection = np.random.choice(bag, size=trainN, replace=True)
+            tree.fit(X[selection,:], y[selection])
+
+        return self
 
     def predict(self, X):
-        pass
+        testN, _ = X.shape
+
+        prediction = np.zeros(testN, self.featureN)
+
+        for idx, tree in enumerate(tqdm.tqdm(self.forest)):
+            prediction[:,idx] = tree.predict(X)
+        
+        # Voting
+        pred = np.argmax(prediction, axis=1)
+
+        return pred 

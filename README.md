@@ -13,6 +13,7 @@ This project aims to find out how to solve the image classification problem with
 # Requirements
 
 - numpy, scipy, scikit-learn
+- jupyternotebook
 - tqdm
 - osqp
 - cupy (optional)
@@ -43,6 +44,8 @@ gzip -d .\t10k-labels-idx1-ubyte.gz
 ```
 
 # Execute Project
+
+Run with `main.ipynb` with jupyter notebook.
 
 # Reference
 

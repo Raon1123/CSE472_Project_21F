@@ -90,6 +90,7 @@ def train_step(args, trainFeature, trainy):
         # For counting
         corr_cnt = 0 # Correction counting
         tot_cnt = 0 # Total counting
+        batchN = 1
 
         for batch_idx in range(batchN):
             batchX, batchy = batch[batch_idx]
