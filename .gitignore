@@ -1,0 +1,14 @@
+# ignore pycache
+__pycache__/
+
+# ignore ipykernel
+.ipynb_checkpoints/
+
+# ignore dump
+*.dump
+
+# ignore dataset
+data/
+
+# ignore test file
+test.py
