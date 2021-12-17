@@ -38,22 +38,19 @@ def split_data(X, y, func):
 """
 Calculate Entropy
 """
-def entropy(boolean):
-    assert boolean.dtype == np.bool_
-
-    tot_cnt = boolean.shape[0]
-
+def entropy(y):
+    tot_cnt = y.shape[0]
     assert tot_cnt != 0
 
-    pos_cnt = np.sum(boolean)
-    neg_cnt = tot_cnt - pos_cnt
+    _, counts = np.unique(y, return_counts=True)
 
-    prob = pos_cnt / tot_cnt
-    pos_entropy = -1.0 * prob * np.log2(prob)
-    prob = neg_cnt / tot_cnt
-    neg_entropy = -1.0 * prob * np.log2(prob)
+    ret = 0.0
 
-    ret = pos_entropy + neg_entropy
+    for cnt in counts:
+        if cnt == 0:
+            continue
+        prob = cnt / tot_cnt
+        ret += -1.0 * prob * np.log2(prob)
 
     return ret
 
@@ -62,24 +59,16 @@ def entropy(boolean):
 Calculate information gain
 E(X) - E(X|pos)
 """
-def info_gain(X, y, func, label):
+def info_gain(X, y, func):
     pos, _ = split_data(X, y, func)
 
-    tot_cnt = y.shape[0]
-    pos_boolean = (pos[1] == label)
-    pos_cnt = np.sum(pos_boolean)
-
-    if pos_cnt == 0:
+    if pos[1].shape[0] == 0:
         return 0.0
-    if pos_cnt == tot_cnt:
-        return 1.0
 
-    pos_prob = pos_cnt / tot_cnt
+    prev_ent = entropy(y)
+    next_ent = entropy(pos[1])
 
-    prev_ent = entropy((y == label))
-    next_ent = entropy(pos_boolean)
-
-    return prev_ent - pos_prob * next_ent
+    return prev_ent - next_ent
 
 
 class NODE():
@@ -130,10 +119,7 @@ class DecisionTree():
             func = leaf_func(max_freq)
             return NODE(func)
 
-        # Select split label
-        choice_label = np.random.choice(y)
-        
-        func = self.function_select(X, y, choice_label)
+        func = self.function_select(X, y)
         left_data, right_data = split_data(X, y, func)
 
         ret = NODE(func)
@@ -147,7 +133,7 @@ class DecisionTree():
 
         return ret
 
-    def function_select(self, X, y, label):
+    def function_select(self, X, y):
         trainN, featureN = X.shape
 
         max_info = 0.0
@@ -161,7 +147,7 @@ class DecisionTree():
                 w = np.random.choice([-1,1])
                 thres = w * np.random.randint(0, 60)
                 func = split_linear_func(feature, w, thres)
-                info = info_gain(X, y, func, label)
+                info = info_gain(X, y, func)
                 if info > max_info and (info is not np.inf):
                     max_info = info
                     best_feature = feature
