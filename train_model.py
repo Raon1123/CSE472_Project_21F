@@ -203,12 +203,12 @@ def test_step(args, testFeature, testy, models):
         testlist.append([batchX, batchy])
 
     if model_type == 'custom_SVM' or model_type == 'sklearn_SVM':
-        for model, feature in zip(models, tqdm.tqdm(features)):
-            tp_cnt = 0
-            tn_cnt = 0
-            fp_cnt = 0
-            fn_cnt = 0
+        tp_cnt = 0
+        tn_cnt = 0
+        fp_cnt = 0
+        fn_cnt = 0
 
+        for model, feature in zip(models, tqdm.tqdm(features)):
             for batch in testlist:
                 testX, testy = batch
 
@@ -233,35 +233,40 @@ def test_step(args, testFeature, testy, models):
                 fn = np.sum(testones[gt_true] != ret[gt_true])
                 fn_cnt += fn
 
-            acc = tp_cnt / (tp_cnt + fp_cnt + fn_cnt + 1e-5)
-            prec = tp_cnt / (tp_cnt + fp_cnt + 1e-5)
-            recall = tp_cnt / (tp_cnt + fn_cnt + 1e-5)
-            f1 = 2 * (prec * recall) / (prec + recall + 1e-5)
+        acc = tp_cnt / (tp_cnt + fp_cnt + fn_cnt + 1e-5)
+        prec = tp_cnt / (tp_cnt + fp_cnt + 1e-5)
+        recall = tp_cnt / (tp_cnt + fn_cnt + 1e-5)
+        f1 = 2 * (prec * recall) / (prec + recall + 1e-5)
 
-            test_acc_list.append(acc)
-            test_prec_list.append(prec)
-            test_recall_list.append(recall)
-            test_f1_list.append(f1)
+        test_acc_list.append(acc)
+        test_prec_list.append(prec)
+        test_recall_list.append(recall)
+        test_f1_list.append(f1)
     else:
         pred = models.predict(testFeature)
+        
+        tp = 0
+        tn = 0
+        fp = 0
+        fn = 0
 
         for feature in features:
             gt_true = (testy == feature)
             gt_false = np.logical_not(gt_true)
 
-            tp = np.sum(testy[gt_true] == pred[gt_true])
-            tn = np.sum(testy[gt_false] == pred[gt_false])
-            fp = np.sum(testy[gt_false] != pred[gt_false])
-            fn = np.sum(testy[gt_true] != pred[gt_true])
+            tp += np.sum(testy[gt_true] == pred[gt_true])
+            tn += np.sum(testy[gt_false] == pred[gt_false])
+            fp += np.sum(testy[gt_false] != pred[gt_false])
+            fn += np.sum(testy[gt_true] != pred[gt_true])
 
-            acc = tp / (tp + fp + fn + 1e-5)
-            prec = tp / (tp + fp + 1e-5)
-            recall = tp / (tp + fn + 1e-5)
-            f1 = 2 * (prec * recall) / (prec + recall + 1e-5)
- 
-            test_acc_list.append(acc)
-            test_prec_list.append(prec)
-            test_recall_list.append(recall)
-            test_f1_list.append(f1)
+        acc = tp / (tp + fp + fn + 1e-5)
+        prec = tp / (tp + fp + 1e-5)
+        recall = tp / (tp + fn + 1e-5)
+        f1 = 2 * (prec * recall) / (prec + recall + 1e-5)
+
+        test_acc_list.append(acc)
+        test_prec_list.append(prec)
+        test_recall_list.append(recall)
+        test_f1_list.append(f1)
 
     return test_acc_list, test_prec_list, test_recall_list, test_f1_list
