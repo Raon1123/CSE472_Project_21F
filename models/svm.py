@@ -1,6 +1,7 @@
 import numpy as np
 import osqp
 from scipy import sparse
+import sklearn.metrics as metrics
 
 """
 linear kernel for SVM
@@ -21,13 +22,15 @@ def gaussian_kernel(sigma, cuda=False):
         # Pairwise subtraction and calculate square distance
         if cuda:
             import cupy as cp
-            diff = cp.array(X2)[cp.newaxis,:,:] - cp.array(X1)[:, cp.newaxis, :]
-            sq_dist = cp.sum(cp.square(diff), axis=-1)
-            ret = cp.asnumpy(cp.exp(sq_dist / (-2.0 * cp.square(sigma))))
+            dataN = X1.shape[0]
+
+            ret = cp.sum(cp.square(cp.array(X2)[cp.newaxis,:,:] - cp.array(X1)[:,cp.newaxis,:]), axis=-1)
+
+            ret = cp.asnumpy(cp.exp(ret / (-2.0 * cp.square(sigma))))
         else:
-            diff = X2[np.newaxis,:,:] - X1[:,np.newaxis, :]
-            sq_dist = np.sum(np.square(diff), axis=-1)
-            ret = np.exp(sq_dist / (-2.0*np.square(sigma)))
+            ret = metrics.pairwise_distances(X1, X2, metric='euclidean', n_jobs=-1)
+
+            ret = np.exp(ret / (-2.0 * np.square(sigma)))
         return ret
     return func
 

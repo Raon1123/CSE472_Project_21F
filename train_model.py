@@ -67,7 +67,6 @@ def train_svm(args, models, trainFeature, trainy, validFeature, validy):
         # For counting
         corr_cnt = 0 # Correction counting
         tot_cnt = 0 # Total counting
-        batchN = 1
 
         for batch_idx in range(batchN):
             batchX, batchy = batch[batch_idx]
@@ -102,13 +101,13 @@ def tree_svm(args, models, trainFeature, trainy, validFeature, validy):
     models.fit(trainFeature, trainy)
 
     # Train accuracy
-    prediction, pred = models.predict(trainFeature)
+    pred = models.predict(trainFeature)
     boolean = (pred == trainy)
     acc = np.sum(boolean) / trainy.shape[0] * 100
     train_acc_list.append(acc)
 
     # Validation accuracy
-    prediction, pred = models.predict(validFeature)
+    pred = models.predict(validFeature)
     boolean = (pred == validy)
     acc = np.sum(boolean) / validy.shape[0] * 100
     valid_acc_list.append(acc)
@@ -170,6 +169,7 @@ Return
 - test_acc_list: test accuracy list
 - test_prec_list: test precision list
 - test_recall_list: test recall list
+- test_f1_list: test f1 list
 """
 def test_step(args, testFeature, testy, models):
     dataset = args['dataset']
@@ -201,6 +201,7 @@ def test_step(args, testFeature, testy, models):
     if model_type == 'custom_SVM' or model_type == 'sklearn_SVM':
         for model, feature in zip(models, tqdm.tqdm(features)):
             tp_cnt = 0
+            tn_cnt = 0
             fp_cnt = 0
             fn_cnt = 0
 
@@ -218,6 +219,9 @@ def test_step(args, testFeature, testy, models):
                 tp = np.sum(testones[gt_true] == ret[gt_true])
                 tp_cnt += tp
 
+                tn = np.sum(testones[gt_false] == ret[gt_false])
+                tn_cnt += tn
+
                 # false positive: gt false, ret true
                 fp = np.sum(testones[gt_false] != ret[gt_false])
                 fp_cnt += fp
@@ -226,30 +230,31 @@ def test_step(args, testFeature, testy, models):
                 fn = np.sum(testones[gt_true] != ret[gt_true])
                 fn_cnt += fn
 
-            acc = tp / (tp + fp + fn)
-            prec = tp / (tp + fp)
-            recall = tp / (tp + fn)
-            f1 = 2 * (prec * recall) / (prec + recall)
+            acc = tp_cnt / (tp_cnt + fp_cnt + fn_cnt + tn_cnt + 1e-5)
+            prec = tp_cnt / (tp_cnt + fp_cnt + 1e-5)
+            recall = tp_cnt / (tp_cnt + fn_cnt + 1e-5)
+            f1 = 2 * (prec * recall) / (prec + recall + 1e-5)
 
             test_acc_list.append(acc)
             test_prec_list.append(prec)
             test_recall_list.append(recall)
             test_f1_list.append(f1)
     else:
-        prediction, pred = models.predict(testFeature)
+        pred = models.predict(testFeature)
 
         for feature in features:
             gt_true = (testy == feature)
             gt_false = np.logical_not(gt_true)
 
             tp = np.sum(testy[gt_true] == pred[gt_true])
+            tn = np.sum(testy[gt_false] == pred[gt_false])
             fp = np.sum(testy[gt_false] != pred[gt_false])
             fn = np.sum(testy[gt_true] != pred[gt_true])
 
-            acc = tp / (tp + fp + fn)
-            prec = tp / (tp + fp)
-            recall = tp / (tp + fn)
-            f1 = 2 * (prec * recall) / (prec + recall)
+            acc = tp / (tp + fp + fn + tn + 1e-5)
+            prec = tp / (tp + fp + 1e-5)
+            recall = tp / (tp + fn + 1e-5)
+            f1 = 2 * (prec * recall) / (prec + recall + 1e-5)
  
             test_acc_list.append(acc)
             test_prec_list.append(prec)

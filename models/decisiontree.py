@@ -138,13 +138,14 @@ class DecisionTree():
         trainN, featureN = X.shape
         maximum = np.sum(X[0])
 
+        cnt = 0
         max_info = 0.0
         best_feature = None
         best_w = None
         best_thres = None
 
         # Stupid algorithm
-        while best_feature == None:
+        while best_feature == None and cnt < 10:
             for feature in range(featureN):
                 w = np.random.choice([-1,1])
                 thres = w * np.random.randint(1, maximum)
@@ -155,7 +156,12 @@ class DecisionTree():
                     best_feature = feature
                     best_w = w
                     best_thres = thres
-        
+
+        if best_feature == None:
+            value, cnt = np.unique(y, return_counts=True)
+            max_freq = value[np.argmax(cnt)]
+            return leaf_func(max_freq)  
+
         return split_linear_func(best_feature, best_w, best_thres)
 
     def predict(self, X):
@@ -213,4 +219,4 @@ class RandForest():
             value, cnt = np.unique(result, return_counts=True)
             pred[idx] = value[np.argmax(cnt)]
 
-        return prediction, pred 
+        return pred 
