@@ -113,9 +113,9 @@ class DecisionTree():
         X, y = samples
         trainN, featureN = X.shape
 
-        if (depth == 0) or (np.all(y == y[0])):
-            value, cnt = np.unique(y, return_counts=True)
-            max_freq = value[np.argmax(cnt)]
+        bin_cnt = np.bincount(y)
+        if (depth == 0) or (np.max(bin_cnt) == trainN):
+            max_freq = np.argmax(bin_cnt)
             func = leaf_func(max_freq)
             return NODE(func)
 
@@ -127,8 +127,7 @@ class DecisionTree():
         if right_data[1].shape[0] != 0:
             ret.push_right(self.train_node(right_data, depth-1))
         else:
-            value, cnt = np.unique(y, return_counts=True)
-            max_freq = value[np.argmax(cnt)]
+            max_freq = np.argmax(bin_cnt)
             func = leaf_func(max_freq)
             ret.push_right(NODE(func))
 
@@ -187,13 +186,13 @@ class RandForest():
         self.forest = [DecisionTree() for i in range(forest)]
 =======
     def __init__(self, forest=100, bag_size=1000, depth=100):
-        self.forestN = forest
         self.forest = [DecisionTree(depth=depth) for i in range(forest)]
 >>>>>>> parent of 4bfcc8f (Revert "update model")
         self.bag_size = bag_size
 
     def fit(self, X, y):
         trainN, featureN = X.shape
+        self.featureN = np.unique(y).shape[0]
 
         for tree in tqdm.tqdm(self.forest):
             bag = np.random.randint(0, trainN, size=self.bag_size)
@@ -206,19 +205,20 @@ class RandForest():
         testN, _ = X.shape
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         prediction = np.zeros(testN, self.featureN)
 =======
         prediction = np.zeros((testN, self.forestN))
         pred = np.zeros((testN))
 >>>>>>> parent of 4bfcc8f (Revert "update model")
+=======
+        prediction = np.zeros((testN, self.featureN))
+>>>>>>> parent of 46d8f32 (update model)
 
         for idx, tree in enumerate(tqdm.tqdm(self.forest)):
             prediction[:,idx] = tree.predict(X)
         
         # Voting
-        for idx in range(testN):
-            result = prediction[idx, :]
-            value, cnt = np.unique(result, return_counts=True)
-            pred[idx] = value[np.argmax(cnt)]
+        pred = np.argmax(prediction, axis=1)
 
-        return prediction, pred 
+        return pred 
