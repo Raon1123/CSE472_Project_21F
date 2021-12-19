@@ -230,7 +230,7 @@ def test_step(args, testFeature, testy, models):
                 fn = np.sum(testones[gt_true] != ret[gt_true])
                 fn_cnt += fn
 
-            acc = tp_cnt / (tp_cnt + fp_cnt + fn_cnt + tn_cnt + 1e-5)
+            acc = tp_cnt / (tp_cnt + fp_cnt + fn_cnt + 1e-5)
             prec = tp_cnt / (tp_cnt + fp_cnt + 1e-5)
             recall = tp_cnt / (tp_cnt + fn_cnt + 1e-5)
             f1 = 2 * (prec * recall) / (prec + recall + 1e-5)
@@ -251,7 +251,7 @@ def test_step(args, testFeature, testy, models):
             fp = np.sum(testy[gt_false] != pred[gt_false])
             fn = np.sum(testy[gt_true] != pred[gt_true])
 
-            acc = tp / (tp + fp + fn + tn + 1e-5)
+            acc = tp / (tp + fp + fn + 1e-5)
             prec = tp / (tp + fp + 1e-5)
             recall = tp / (tp + fn + 1e-5)
             f1 = 2 * (prec * recall) / (prec + recall + 1e-5)
