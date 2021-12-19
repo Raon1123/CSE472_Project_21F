@@ -182,12 +182,17 @@ class DecisionTree():
 
 class RandForest():
 <<<<<<< HEAD
+<<<<<<< HEAD
     def __init__(self, forest=100, bag_size=1000):
         self.forest = [DecisionTree() for i in range(forest)]
 =======
     def __init__(self, forest=100, bag_size=1000, depth=100):
         self.forest = [DecisionTree(depth=depth) for i in range(forest)]
 >>>>>>> parent of 4bfcc8f (Revert "update model")
+=======
+    def __init__(self, forest=100, bag_size=1000):
+        self.forest = [DecisionTree() for i in range(forest)]
+>>>>>>> parent of f48055a (modify dtree)
         self.bag_size = bag_size
 
     def fit(self, X, y):
@@ -206,6 +211,7 @@ class RandForest():
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         prediction = np.zeros(testN, self.featureN)
 =======
         prediction = np.zeros((testN, self.forestN))
@@ -214,6 +220,9 @@ class RandForest():
 =======
         prediction = np.zeros((testN, self.featureN))
 >>>>>>> parent of 46d8f32 (update model)
+=======
+        prediction = np.zeros(testN, self.featureN)
+>>>>>>> parent of f48055a (modify dtree)
 
         for idx, tree in enumerate(tqdm.tqdm(self.forest)):
             prediction[:,idx] = tree.predict(X)
