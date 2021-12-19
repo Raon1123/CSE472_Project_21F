@@ -113,9 +113,9 @@ class DecisionTree():
         X, y = samples
         trainN, featureN = X.shape
 
-        bin_cnt = np.bincount(y)
-        if (depth == 0) or (np.max(bin_cnt) == trainN):
-            max_freq = np.argmax(bin_cnt)
+        if (depth == 0) or (np.all(y == y[0])):
+            value, cnt = np.unique(y, return_counts=True)
+            max_freq = value[np.argmax(cnt)]
             func = leaf_func(max_freq)
             return NODE(func)
 
@@ -127,7 +127,8 @@ class DecisionTree():
         if right_data[1].shape[0] != 0:
             ret.push_right(self.train_node(right_data, depth-1))
         else:
-            max_freq = np.argmax(bin_cnt)
+            value, cnt = np.unique(y, return_counts=True)
+            max_freq = value[np.argmax(cnt)]
             func = leaf_func(max_freq)
             ret.push_right(NODE(func))
 
@@ -183,12 +184,12 @@ class DecisionTree():
 
 class RandForest():
     def __init__(self, forest=100, bag_size=1000, depth=100):
+        self.forestN = forest
         self.forest = [DecisionTree(depth=depth) for i in range(forest)]
         self.bag_size = bag_size
 
     def fit(self, X, y):
         trainN, featureN = X.shape
-        self.featureN = np.unique(y).shape[0]
 
         for tree in tqdm.tqdm(self.forest):
             bag = np.random.randint(0, trainN, size=self.bag_size)
@@ -200,12 +201,16 @@ class RandForest():
     def predict(self, X):
         testN, _ = X.shape
 
-        prediction = np.zeros((testN, self.featureN))
+        prediction = np.zeros((testN, self.forestN))
+        pred = np.zeros((testN))
 
         for idx, tree in enumerate(tqdm.tqdm(self.forest)):
             prediction[:,idx] = tree.predict(X)
         
         # Voting
-        pred = np.argmax(prediction, axis=1)
+        for idx in range(testN):
+            result = prediction[idx, :]
+            value, cnt = np.unique(result, return_counts=True)
+            pred[idx] = value[np.argmax(cnt)]
 
-        return pred 
+        return prediction, pred 
