@@ -4,6 +4,7 @@ import math
 
 from utils.load_data import get_data
 from models.svm import SVM
+from models.decisiontree import RandForest, DecisionTree
 from sklearn import svm
 
 def get_features(dataset):
@@ -17,36 +18,15 @@ def get_features(dataset):
 """
 train models
 """
-def train_step(args, trainFeature, trainy):
+def train_svm(args, models, trainFeature, trainy, validFeature, validy):
     dataset = args['dataset']
-    validation = args['validation']
     batch_sz = args['batch']
 
-    model_type = args['model']
-
-    C = args['C']
-    sigma = args['sigma']
-    kernel = args['kernel']
-
     features = get_features(dataset)
-    
-    # Prepare models
-    if model_type == 'custom_SVM':
-        models = [SVM(kernel=kernel, C=C, sigma=sigma, cuda=args['cuda']) for i in features]
-    else:
-        models = [svm.SVC(kernel='rbf', C=C) for i in features]
 
-    # Constants
-    trainN = trainFeature.shape[0] # Number of data
-    validN = int(trainN * validation) # Number of validation data
-    featuresN = len(features) # Number of feature
+    trainN = trainFeature.shape[0]
+    featuresN = len(features)
 
-    # Prepare validation data
-    select_idx = np.random.choice(trainN, validN, replace=False)
-    validFeature = trainFeature[select_idx]
-    validy = trainy[select_idx]
-
-    # Store accuracy
     train_acc_list = []
     valid_acc_list = []
 
@@ -90,7 +70,6 @@ def train_step(args, trainFeature, trainy):
         # For counting
         corr_cnt = 0 # Correction counting
         tot_cnt = 0 # Total counting
-        batchN = 1
 
         for batch_idx in range(batchN):
             batchX, batchy = batch[batch_idx]
@@ -113,20 +92,101 @@ def train_step(args, trainFeature, trainy):
 
         #valid_correction[:, idx] = correction
         valid_acc_list.append(100.0 * valid_cnt / validN)
+
+    return models, train_acc_list, valid_acc_list
+
+
+def tree_svm(args, models, trainFeature, trainy, validFeature, validy):
+    train_acc_list = []
+    valid_acc_list = []
+
+    # Train tree model
+    models.fit(trainFeature, trainy)
+
+    # Train accuracy
+    pred = models.predict(trainFeature)
+    boolean = (pred == trainy)
+    acc = np.sum(boolean) / trainy.shape[0] * 100
+    train_acc_list.append(acc)
+
+    # Validation accuracy
+    pred = models.predict(validFeature)
+    boolean = (pred == validy)
+    acc = np.sum(boolean) / validy.shape[0] * 100
+    valid_acc_list.append(acc)
+
+    return models, train_acc_list, valid_acc_list
+
+
+"""
+train models
+"""
+def train_step(args, trainFeature, trainy):
+    dataset = args['dataset']
+    validation = args['validation']
+
+    model_type = args['model']
+
+    C = args['C']
+    sigma = args['sigma']
+    kernel = args['kernel']
+
+    depth = args['depth']
+    forest = args['forest']
+    bag_size = args['bag_size']
+
+    labels = get_features(dataset)
+    
+    # Prepare models
+    if model_type == 'custom_SVM':
+        models = [SVM(kernel=kernel, C=C, sigma=sigma, cuda=args['cuda']) for i in labels]
+    elif model_type == 'decisiontree':
+        models = DecisionTree(depth=depth)
+    elif model_type == 'randomforest':
+        models = RandForest(forest=forest, bag_size=bag_size, depth=depth)
+    elif model_type == 'sklearn_SVM':
+        models = [svm.SVC(kernel='rbf', C=C) for i in labels]
+
+    # Constants
+    trainN = trainFeature.shape[0] # Number of data
+    validN = int(trainN * validation) # Number of validation data
+
+    # Prepare validation data
+    select_idx = np.random.choice(trainN, validN, replace=False)
+    validFeature = trainFeature[select_idx]
+    validy = trainy[select_idx]
+
+    # Training
+    if model_type == 'custom_SVM' or model_type == 'sklearn_SVM':
+        models, train_acc_list, valid_acc_list = train_svm(args, models, trainFeature, trainy, validFeature, validy)
+    else:
+        models, train_acc_list, valid_acc_list = tree_svm(args, models, trainFeature, trainy, validFeature, validy)
             
     return models, train_acc_list, valid_acc_list
 
 
+"""
+Test models
+
+Return
+- test_acc_list: test accuracy list
+- test_prec_list: test precision list
+- test_recall_list: test recall list
+- test_f1_list: test f1 list
+"""
 def test_step(args, testFeature, testy, models):
     dataset = args['dataset']
+    model_type = args['model']
     batch_sz = 2000
 
     features = get_features(dataset)  
 
     testN = testFeature.shape[0]
 
-    test_corrs = np.zeros((testN, len(features)))
     test_acc_list = []
+    test_prec_list = []
+    test_recall_list = []
+    test_f1_list = []
 
     batchN = math.ceil(testN/batch_sz)
     testlist = []
@@ -141,19 +201,66 @@ def test_step(args, testFeature, testy, models):
 
         testlist.append([batchX, batchy])
 
-    for model, feature in zip(models, tqdm.tqdm(features)):
-        corr_cnt = 0
-        tot_cnt = 0
+    if model_type == 'custom_SVM' or model_type == 'sklearn_SVM':
+        for model, feature in zip(models, tqdm.tqdm(features)):
+            tp_cnt = 0
+            tn_cnt = 0
+            fp_cnt = 0
+            fn_cnt = 0
 
-        for batch in testlist:
-            testX, testy = batch
-            testones = (testy == feature).astype(np.int8) * 2 - 1
+            for batch in testlist:
+                testX, testy = batch
 
-            ret = model.predict(testX)
+                gt_true = (testy == feature)
+                gt_false = np.logical_not(gt_true)
 
-            corr_cnt += np.sum(ret == testones)
-            tot_cnt += testy.shape[0]
+                testones = gt_true.astype(np.int8) * 2 - 1
 
-        test_acc_list.append(100.0 * corr_cnt / tot_cnt)
+                ret = model.predict(testX)
 
-    return test_acc_list
+                tp = np.sum(testones[gt_true] == ret[gt_true])
+                tp_cnt += tp
+
+                tn = np.sum(testones[gt_false] == ret[gt_false])
+                tn_cnt += tn
+
+                # false positive: gt false, ret true
+                fp = np.sum(testones[gt_false] != ret[gt_false])
+                fp_cnt += fp
+
+                # false negative: gt true, ret false
+                fn = np.sum(testones[gt_true] != ret[gt_true])
+                fn_cnt += fn
+
+            acc = tp_cnt / (tp_cnt + fp_cnt + fn_cnt + 1e-5)
+            prec = tp_cnt / (tp_cnt + fp_cnt + 1e-5)
+            recall = tp_cnt / (tp_cnt + fn_cnt + 1e-5)
+            f1 = 2 * (prec * recall) / (prec + recall + 1e-5)
+
+            test_acc_list.append(acc)
+            test_prec_list.append(prec)
+            test_recall_list.append(recall)
+            test_f1_list.append(f1)
+    else:
+        pred = models.predict(testFeature)
+
+        for feature in features:
+            gt_true = (testy == feature)
+            gt_false = np.logical_not(gt_true)
+
+            tp = np.sum(testy[gt_true] == pred[gt_true])
+            tn = np.sum(testy[gt_false] == pred[gt_false])
+            fp = np.sum(testy[gt_false] != pred[gt_false])
+            fn = np.sum(testy[gt_true] != pred[gt_true])
+
+            acc = tp / (tp + fp + fn + 1e-5)
+            prec = tp / (tp + fp + 1e-5)
+            recall = tp / (tp + fn + 1e-5)
+            f1 = 2 * (prec * recall) / (prec + recall + 1e-5)
+ 
+            test_acc_list.append(acc)
+            test_prec_list.append(prec)
+            test_recall_list.append(recall)
+            test_f1_list.append(f1)
+
+    return test_acc_list, test_prec_list, test_recall_list, test_f1_list

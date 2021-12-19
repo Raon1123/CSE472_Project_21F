@@ -136,13 +136,14 @@ class DecisionTree():
     def function_select(self, X, y):
         trainN, featureN = X.shape
 
+        cnt = 0
         max_info = 0.0
         best_feature = None
         best_w = None
         best_thres = None
 
         # Stupid algorithm
-        while best_feature == None:
+        while best_feature == None and cnt < 10:
             for feature in range(featureN):
                 w = np.random.choice([-1,1])
                 thres = w * np.random.randint(0, 60)
@@ -153,7 +154,12 @@ class DecisionTree():
                     best_feature = feature
                     best_w = w
                     best_thres = thres
-        
+
+        if best_feature == None:
+            value, cnt = np.unique(y, return_counts=True)
+            max_freq = value[np.argmax(cnt)]
+            return leaf_func(max_freq)  
+
         return split_linear_func(best_feature, best_w, best_thres)
 
     def predict(self, X):
@@ -181,18 +187,8 @@ class DecisionTree():
 
 
 class RandForest():
-<<<<<<< HEAD
-<<<<<<< HEAD
-    def __init__(self, forest=100, bag_size=1000):
-        self.forest = [DecisionTree() for i in range(forest)]
-=======
     def __init__(self, forest=100, bag_size=1000, depth=100):
         self.forest = [DecisionTree(depth=depth) for i in range(forest)]
->>>>>>> parent of 4bfcc8f (Revert "update model")
-=======
-    def __init__(self, forest=100, bag_size=1000):
-        self.forest = [DecisionTree() for i in range(forest)]
->>>>>>> parent of f48055a (modify dtree)
         self.bag_size = bag_size
 
     def fit(self, X, y):
@@ -209,20 +205,8 @@ class RandForest():
     def predict(self, X):
         testN, _ = X.shape
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-        prediction = np.zeros(testN, self.featureN)
-=======
         prediction = np.zeros((testN, self.forestN))
         pred = np.zeros((testN))
->>>>>>> parent of 4bfcc8f (Revert "update model")
-=======
-        prediction = np.zeros((testN, self.featureN))
->>>>>>> parent of 46d8f32 (update model)
-=======
-        prediction = np.zeros(testN, self.featureN)
->>>>>>> parent of f48055a (modify dtree)
 
         for idx, tree in enumerate(tqdm.tqdm(self.forest)):
             prediction[:,idx] = tree.predict(X)
