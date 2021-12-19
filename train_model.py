@@ -24,7 +24,8 @@ def train_svm(args, models, trainFeature, trainy, validFeature, validy):
 
     features = get_features(dataset)
 
-    trainN = trainFeature.shape[0]
+    trainN = trainy.shape[0]
+    validN = validy.shape[0]
     featuresN = len(features)
 
     train_acc_list = []
